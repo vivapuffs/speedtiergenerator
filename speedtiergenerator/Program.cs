@@ -8,33 +8,32 @@ using System.Threading.Tasks;
 
 namespace speedtiergenerator
 {
-    //variables for stat calculation - can be modified to be used for other tiers/purposes
-
-    //max investment with positive nature
-    static class maxSpeed
+    class Pokemon
     {
-        //iv = stat iv
-        public static int iv = 31;
-        //ev = stat evs
-        public static int ev = 252;
-        //level = pokemon level
-        public static int level = 5;
-        //nature = positive = 1.1, negative = 0.9, netural = 1
-        public static double nature = 1.1;
+        public string name;
+
+        public double baseSpeed;
+        public int iv;
+        public int ev;
+        public int level;
+        public double nature;
+
+        public double calculatedSpeed;
+        public double speedStage;
+
+        public Pokemon(string pokemonName, double pokemonBaseSpeed, int pokemonIv, int pokemonEv, int pokemonLevel, double pokemonNature, double pokemonCalculatedSpeed, double pokemonSpeedStage)
+        {
+            name = pokemonName;
+            baseSpeed = pokemonBaseSpeed;
+            iv = pokemonIv;
+            ev = pokemonEv;
+            level = pokemonLevel;
+            nature = pokemonNature;
+            calculatedSpeed = pokemonCalculatedSpeed;
+            speedStage = pokemonSpeedStage;
+        }
     }
 
-    //no investment with neutral nature
-    static class neutralSpeed
-    {
-        //iv = stat iv
-        public static int iv = 31;
-        //ev = stat evs
-        public static int ev = 0;
-        //level = pokemon level
-        public static int level = 5;
-        //nature = positive = 1.1, negative = 0.9, netural = 1
-        public static double nature = 1;
-    }
 
     class Program
     {
@@ -57,51 +56,71 @@ namespace speedtiergenerator
                 throw;
             }
 
-            //string[] doubleSpeeders = "Feebas,Goldeen,Horsea,Kabuto,Lotad,Magikarp,Surskit,Bellsprout,Exeggcute,Hoppip,Oddish,Seedot,Sunkern,Carvanha,Doduo,Dratini,Growlithe,Ledyba,Pidgey,Ponyta,Porygon,Spearow,Spinarak,Swablu,Taillow,Treecko,Wingull".Split(",");
-            //createPokemonList(doubleSpeeders);
-
+            //create list of pokemon
+            //string pokemonName, double pokemonBaseSpeed, int pokemonIv, int pokemonEv, int pokemonLevel, double pokemonNature, double pokemonCalculatedSpeed, double pokemonSpeedStage
             createPokemonList(splitPokemon);
             Console.ReadKey();
         }
 
         static async void createPokemonList(string[] splitPokemon)
         {
-            Dictionary<string, int> pokemon = new Dictionary<string, int>();
-            pokemon.Clear();
-            foreach (var item in splitPokemon)
+            List<Pokemon> pokemonList = new List<Pokemon>();
+            foreach (var pokemon in splitPokemon)
             {
-                int speed = await getPokemonBaseSpeed(item.ToLower());
-                pokemon.Add(item, (int)calculateSpeed(speed));
+                int baseSpeed = await getPokemonBaseSpeed(pokemon.ToLower());
+                //sets pokemon up to have max speed investment
+                Pokemon tempPokemon = new Pokemon(pokemon, baseSpeed, 31, 252, 5, 1.1, 0, 1);
+                tempPokemon.calculatedSpeed = calculateSpeed(tempPokemon);
+                pokemonList.Add(tempPokemon);
             }
-
-            generateOutput(pokemon);
+            generateOutput(pokemonList);
             Console.WriteLine("Finished, press any key to exit");
         }
 
         //formats the speed tier post and writes it to output.txt
-        static void generateOutput(Dictionary<string, int> pokemon)
+        static void generateOutput(List<Pokemon> pokemonList)
         {
-            //write out swift swimmers
             //sort the list by speed value
-            pokemon = pokemon.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            pokemonList = pokemonList.OrderByDescending(x => x.calculatedSpeed).ToList();
             using (StreamWriter sw = new StreamWriter("output.txt"))
             {
-                int currentSpeed = 0;
-                foreach (var item in pokemon)
+                double currentSpeed = 0;
+                foreach (var pokemon in pokemonList)
                 {
                     //get current speed
                     //check if its the same as last speed
-                    if (currentSpeed != item.Value)
+                    if (currentSpeed != pokemon.calculatedSpeed)
                     {
                         sw.WriteLine();
-                        //sw.WriteLine("[b]" + item.Value * 2 + " speed[/b] (at +2 due to ability or Agility)");
-                        sw.WriteLine("[b]" + item.Value + " speed[/b] (" + Math.Truncate(item.Value * 1.5) + " after Salac Berry) ");
+                        //strings for ADV LC's simplified speed tier document
+                        sw.WriteLine("[b]" + pokemon.calculatedSpeed * 2 + " speed[/b] (at +2 due to ability or Agility)");
+                        sw.WriteLine("[b]" + pokemon.calculatedSpeed + " speed[/b] (" + Math.Truncate(pokemon.calculatedSpeed * 1.5) + " after Salac Berry) ");
                     }
-                    sw.WriteLine(":" + item.Key + ": " + item.Key);
-                    currentSpeed = item.Value;
+                    sw.WriteLine();
+                    //for ADV LC
+                    sw.WriteLine(":" + pokemon.name + ": " + pokemon.name);
+                    currentSpeed = pokemon.calculatedSpeed;
                 }
             }
 
+        }
+
+        //calculate a pokemon's speed stat
+        static double calculateSpeed(Pokemon pokemon)
+        {
+            //formula taken from bulbapedia
+            //((((2 * baseSpeed + iv + (ev / 4) * level) / 100) + 5)) * nature;
+            double result;
+            result = 2 * pokemon.baseSpeed;
+            result += pokemon.iv;
+            result += (pokemon.ev / 4);
+            result *= pokemon.level;
+            result /= 100;
+            result += 5;
+            result = Math.Truncate(result);
+            result *= pokemon.nature;
+
+            return result;
         }
 
         //gets a pokemon's base speed by calling pokeAPI
@@ -115,24 +134,6 @@ namespace speedtiergenerator
                 speed = json.stats[5].base_stat;
             }
             return speed;
-        }
-
-        //calculcates a pokemon's speed stat
-        static double calculateSpeed(double baseSpeed)
-        {
-            //formula taken from bulbapedia
-            //((((2 * baseSpeed + iv + (ev / 4) * level) / 100) + 5)) * nature;
-            double result;
-            result = 2 * baseSpeed;
-            result += maxSpeed.iv;
-            result += (maxSpeed.ev / 4);
-            result *= maxSpeed.level;
-            result /= 100;
-            result += 5;
-            result = Math.Truncate(result);
-            result *= maxSpeed.nature;
-
-            return result;
         }
     }
 }
