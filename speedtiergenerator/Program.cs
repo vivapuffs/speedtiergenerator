@@ -18,10 +18,10 @@ namespace speedtiergenerator
         public int level;
         public double nature;
 
-        public double calculatedSpeed;
+        public int calculatedSpeed;
         public double speedStage;
 
-        public Pokemon(string pokemonName, double pokemonBaseSpeed, int pokemonIv, int pokemonEv, int pokemonLevel, double pokemonNature, double pokemonCalculatedSpeed, double pokemonSpeedStage)
+        public Pokemon(string pokemonName, double pokemonBaseSpeed, int pokemonIv, int pokemonEv, int pokemonLevel, double pokemonNature, int pokemonCalculatedSpeed, double pokemonSpeedStage)
         {
             name = pokemonName;
             baseSpeed = pokemonBaseSpeed;
@@ -93,10 +93,10 @@ namespace speedtiergenerator
                     {
                         sw.WriteLine();
                         //strings for ADV LC's simplified speed tier document
-                        sw.WriteLine("[b]" + pokemon.calculatedSpeed * 2 + " speed[/b] (at +2 due to ability or Agility)");
+                        //sw.WriteLine("[b]" + pokemon.calculatedSpeed * 2 + " speed[/b] (at +2 due to ability or Agility)");
                         sw.WriteLine("[b]" + pokemon.calculatedSpeed + " speed[/b] (" + Math.Truncate(pokemon.calculatedSpeed * 1.5) + " after Salac Berry) ");
                     }
-                    sw.WriteLine();
+                    //sw.WriteLine();
                     //for ADV LC
                     sw.WriteLine(":" + pokemon.name + ": " + pokemon.name);
                     currentSpeed = pokemon.calculatedSpeed;
@@ -106,7 +106,7 @@ namespace speedtiergenerator
         }
 
         //calculate a pokemon's speed stat
-        static double calculateSpeed(Pokemon pokemon)
+        static int calculateSpeed(Pokemon pokemon)
         {
             //formula taken from bulbapedia
             //((((2 * baseSpeed + iv + (ev / 4) * level) / 100) + 5)) * nature;
@@ -119,8 +119,8 @@ namespace speedtiergenerator
             result += 5;
             result = Math.Truncate(result);
             result *= pokemon.nature;
-
-            return result;
+            result = Math.Truncate(result);
+            return (int)result;
         }
 
         //gets a pokemon's base speed by calling pokeAPI
